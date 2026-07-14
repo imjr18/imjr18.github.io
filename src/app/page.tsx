@@ -19,6 +19,16 @@ export default function Home() {
           Everything below renders and reads perfectly without them. */}
       <CinematicClient />
 
+      {/* Always-on stage label: guarantees there's never a stretch of scroll
+          with nothing legible on screen, even mid-transition between panels. */}
+      <div id="cine-ticker" className="cine-ticker" aria-hidden>
+        <span id="cine-ticker-index" className="cine-ticker-index">01/05</span>
+        <span id="cine-ticker-title" className="cine-ticker-title">SIGNAL</span>
+        <span id="cine-ticker-blurb" className="cine-ticker-blurb">
+          biosignal waveform — ECG · EEG
+        </span>
+      </div>
+
       <main id="main">
         <div id="cine">
           <div className="cine-stage">

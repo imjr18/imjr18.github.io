@@ -9,6 +9,8 @@ export interface ParticleData {
   count: number;
   attrs: {
     aWave: Float32Array;
+    aHelix: Float32Array;
+    aHelixTone: Float32Array;
     aNet: Float32Array;
     aLatent: Float32Array;
     aBrain: Float32Array;
@@ -61,11 +63,23 @@ function layerNodes(): { x: number; y: number; z: number; nx: number }[][] {
   });
 }
 
+/** Double-helix geometry: two backbone strands + discrete ladder rungs. */
+const HELIX_SPAN = 22;
+const HELIX_TURNS = 5.5;
+const HELIX_R = 1.7;
+const HELIX_RUNG_SLOTS = 34;
+
+function helixAngle(t: number): number {
+  return t * HELIX_TURNS * Math.PI * 2;
+}
+
 export function buildParticleData(
   count: number,
   clusters: Cluster[],
 ): ParticleData {
   const aWave = new Float32Array(count * 3);
+  const aHelix = new Float32Array(count * 3);
+  const aHelixTone = new Float32Array(count);
   const aNet = new Float32Array(count * 3);
   const aLatent = new Float32Array(count * 3);
   const aBrain = new Float32Array(count * 3);
@@ -78,17 +92,54 @@ export function buildParticleData(
 
   for (let i = 0; i < count; i++) {
     const i3 = i * 3;
+    const t = i / count;
     aSeed[i] = Math.random();
 
     // ── Wave ribbon ──────────────────────────────────────────────
     {
-      const t = i / count;
-      const x = (t - 0.5) * 22;
+      const x = (t - 0.5) * HELIX_SPAN;
       const base = ecg(t);
       const lane = gauss() * 0.55;
       aWave[i3] = x;
       aWave[i3 + 1] = base + lane;
       aWave[i3 + 2] = gauss() * 0.7 + (i % 2 === 0 ? 0.5 : -0.5);
+    }
+
+    // ── Double helix (two backbone strands + ladder rungs) ───────
+    // Reuses the same `t` as the wave ribbon so points slide continuously
+    // in x while curling into the twist — the signal becomes code.
+    {
+      // 45% strand A, 45% strand B, 10% rungs — rungs are the minority so
+      // they read as thin bridges, never a solid band.
+      const role = i % 20;
+      if (role < 9) {
+        const angle = helixAngle(t);
+        aHelix[i3] = (t - 0.5) * HELIX_SPAN;
+        aHelix[i3 + 1] = HELIX_R * Math.cos(angle) + gauss() * 0.035;
+        aHelix[i3 + 2] = HELIX_R * Math.sin(angle) + gauss() * 0.035;
+        aHelixTone[i] = 0;
+      } else if (role < 18) {
+        const angle = helixAngle(t) + Math.PI;
+        aHelix[i3] = (t - 0.5) * HELIX_SPAN;
+        aHelix[i3 + 1] = HELIX_R * Math.cos(angle) + gauss() * 0.035;
+        aHelix[i3 + 2] = HELIX_R * Math.sin(angle) + gauss() * 0.035;
+        aHelixTone[i] = 1;
+      } else {
+        // Quantize to sparse, discrete rung slots so the ladder reads as
+        // distinct bridges, not a continuous smear.
+        const slotT = Math.round(t * HELIX_RUNG_SLOTS) / HELIX_RUNG_SLOTS;
+        const angleA = helixAngle(slotT);
+        const angleB = angleA + Math.PI;
+        const ay = HELIX_R * Math.cos(angleA);
+        const az = HELIX_R * Math.sin(angleA);
+        const by = HELIX_R * Math.cos(angleB);
+        const bz = HELIX_R * Math.sin(angleB);
+        const f = Math.random();
+        aHelix[i3] = (slotT - 0.5) * HELIX_SPAN + gauss() * 0.025;
+        aHelix[i3 + 1] = ay + (by - ay) * f;
+        aHelix[i3 + 2] = az + (bz - az) * f;
+        aHelixTone[i] = 0.5;
+      }
     }
 
     // ── Neural net (nodes + edges) ───────────────────────────────
@@ -129,29 +180,58 @@ export function buildParticleData(
       aClusterColor[i3 + 2] = col.b;
     }
 
-    // ── Brain point cloud (two hemispheres + fissure) ────────────
+    // ── Brain point cloud: oval cortex (fissure + folding) + a ────
+    // smaller, tighter-folded cerebellum lobe tucked behind/below it.
     {
-      const u = Math.random() * Math.PI * 2;
-      const v = Math.acos(2 * Math.random() - 1);
-      const shell = 0.86 + Math.random() * 0.14;
-      const x = Math.sin(v) * Math.cos(u);
-      const y = Math.cos(v);
-      const z = Math.sin(v) * Math.sin(u);
-      // cortical folding
-      const fold = 0.12 * Math.sin(x * 6 + y * 5) * Math.sin(z * 6);
-      const sx = 3.1 + fold;
-      const sy = 2.3 + fold;
-      const sz = 2.7 + fold;
-      // longitudinal fissure: push points away from x≈0 plane
-      const fissure = Math.sign(x) * Math.exp(-x * x * 12) * 0.18;
-      aBrain[i3] = x * sx * shell + fissure;
-      aBrain[i3 + 1] = y * sy * shell + 0.3;
-      aBrain[i3 + 2] = z * sz * shell;
+      const isCerebellum = Math.random() < 0.07;
+      if (isCerebellum) {
+        const u = Math.random() * Math.PI * 2;
+        const v = Math.acos(2 * Math.random() - 1);
+        const shell = 0.85 + Math.random() * 0.15;
+        const x = Math.sin(v) * Math.cos(u);
+        const y = Math.cos(v);
+        const z = Math.sin(v) * Math.sin(u);
+        const fold = 0.22 * Math.sin(x * 14 + y * 11) * Math.sin(z * 13);
+        aBrain[i3] = x * (1.35 + fold) * shell;
+        aBrain[i3 + 1] = y * (0.85 + fold) * shell - 1.55;
+        aBrain[i3 + 2] = z * (1.15 + fold) * shell - 2.05;
+      } else {
+        const u = Math.random() * Math.PI * 2;
+        const v = Math.acos(2 * Math.random() - 1);
+        const shell = 0.86 + Math.random() * 0.14;
+        const x = Math.sin(v) * Math.cos(u);
+        const y = Math.cos(v);
+        const z = Math.sin(v) * Math.sin(u);
+        // multi-octave cortical folding
+        const fold =
+          0.1 * Math.sin(x * 9 + y * 7) * Math.sin(z * 8) +
+          0.06 * Math.sin(x * 15 - z * 10);
+        const sx = 2.65 + fold;
+        const sy = 2.05 + fold;
+        const sz = 3.05 + fold;
+        // longitudinal fissure splits the hemispheres
+        const fissure = Math.sign(x) * Math.exp(-x * x * 14) * 0.24;
+        // taper the occipital (back) end to leave room for the cerebellum
+        const backTaper = z < -0.4 ? 1 - (Math.abs(z) - 0.4) * 0.35 : 1;
+        aBrain[i3] = x * sx * shell * backTaper + fissure;
+        aBrain[i3 + 1] = y * sy * shell * backTaper + 0.25;
+        aBrain[i3 + 2] = z * sz * shell * backTaper;
+      }
     }
   }
 
   return {
     count,
-    attrs: { aWave, aNet, aLatent, aBrain, aClusterColor, aNetLayer, aSeed },
+    attrs: {
+      aWave,
+      aHelix,
+      aHelixTone,
+      aNet,
+      aLatent,
+      aBrain,
+      aClusterColor,
+      aNetLayer,
+      aSeed,
+    },
   };
 }

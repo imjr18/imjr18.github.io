@@ -149,8 +149,8 @@ body {
 }
 
 .cinematic #cine {
-  height: 760vh;
-  height: 760svh;
+  height: 880vh;
+  height: 880svh;
 }
 
 .cinematic .cine-stage {
@@ -479,6 +479,65 @@ html.cinematic {
 @keyframes ecg-run {
   to {
     stroke-dashoffset: -1.04;
+  }
+}
+
+/* ── Always-on stage ticker ─────────────────────────────────────── */
+.cine-ticker {
+  display: none;
+  position: fixed;
+  left: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 20;
+  align-items: baseline;
+  gap: 0.6rem;
+  max-width: min(90vw, 30rem);
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--color-hairline);
+  background: rgba(7, 10, 13, 0.55);
+  backdrop-filter: blur(6px);
+  font-family: var(--font-mono);
+  pointer-events: none;
+}
+.cinematic .cine-ticker {
+  display: flex;
+}
+.cine-ticker-index {
+  font-size: 10px;
+  color: var(--color-ink2);
+  letter-spacing: 0.08em;
+}
+.cine-ticker-title {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-phosphor);
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+.cine-ticker-blurb {
+  font-size: 11px;
+  color: var(--color-ink1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 640px) {
+  .cine-ticker-blurb {
+    display: none;
+  }
+}
+.cine-ticker.pulse .cine-ticker-title,
+.cine-ticker.pulse .cine-ticker-blurb {
+  animation: ticker-in 0.5s ease;
+}
+@keyframes ticker-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 

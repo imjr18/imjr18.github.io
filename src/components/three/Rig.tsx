@@ -5,17 +5,20 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { scrollBus } from "@/lib/scroll-bus";
 import { projects } from "@/data/projects";
+import { MORPH, CARD_SPAN } from "@/lib/timeline";
 
 const damp = THREE.MathUtils.damp;
-const CARD_SPAN: [number, number] = [0.485, 0.805];
 
 /**
  * Camera choreography driven by master scroll progress:
  *  wave   → fly along the ribbon
+ *  helix  → fly alongside the strand with a slow orbit that reveals the twist
  *  net    → pull back to frame the whole graph
  *  latent → dolly cluster→cluster (one station per project)
  *  brain  → pull back and slowly orbit
  * Position + lookAt are damped every frame — never set from the scroll event.
+ * Segment boundaries come from lib/timeline.ts so the camera can never drift
+ * out of sync with the morph state or the panel/card fades.
  */
 export function Rig() {
   const { camera } = useThree();
@@ -28,14 +31,25 @@ export function Rig() {
     const pos = tmpPos.current;
     const lk = tmpLook.current;
 
-    if (p < 0.18) {
+    if (p < MORPH.waveHold) {
       // Fly along the waveform.
-      const k = p / 0.18;
-      pos.set(-8 + k * 11, 1.2, 8.5);
-      lk.set(-4 + k * 11, 0, 0);
-    } else if (p < 0.44) {
-      // Frame the neural net.
-      const k = (p - 0.18) / 0.26;
+      const k = p / MORPH.waveHold;
+      pos.set(-8 + k * 4, 1.15, 8.3);
+      lk.set(-4.5 + k * 4, 0, 0);
+    } else if (p < MORPH.toNet[0]) {
+      // True constant-radius orbit around the helix's own axis (not an
+      // ellipse) — a lopsided orbit swings the camera from close-and-crisp
+      // to far-and-washed-out as it revolves, which is what made some
+      // angles of this shot fall apart before.
+      const k = (p - MORPH.waveHold) / (MORPH.toNet[0] - MORPH.waveHold);
+      const travelX = -4 + k * 10;
+      const orbitR = 4.0;
+      const ang = k * Math.PI * 2.4;
+      pos.set(travelX, Math.sin(ang) * orbitR, Math.cos(ang) * orbitR);
+      lk.set(travelX + 1.8, 0, 0);
+    } else if (p < CARD_SPAN[0]) {
+      // Pull back to frame the whole neural net.
+      const k = (p - MORPH.toNet[0]) / (CARD_SPAN[0] - MORPH.toNet[0]);
       pos.set(Math.sin(k * 0.6) * 2, 0.6, 13.5 - k * 1.5);
       lk.set(0, 0, 0);
     } else if (p < CARD_SPAN[1]) {
@@ -57,12 +71,13 @@ export function Rig() {
       pos.set(cx * 0.55, cy * 0.5 + 0.4, 8.2);
       lk.set(cx, cy, cz);
     } else {
-      // Brain: pull back with a slow orbit, framed right-of-center so the
-      // About copy on the left never fights it.
+      // Brain: close enough to be the clear star of this act, biased so it
+      // sits beside the About copy rather than dead-center behind it; the
+      // text scrim (not distance) is what keeps the paragraph legible.
       const k = THREE.MathUtils.clamp((p - CARD_SPAN[1]) / (1 - CARD_SPAN[1]), 0, 1);
       const ang = state.clock.elapsedTime * 0.12;
-      pos.set(Math.sin(ang) * (2 + k * 2) - 1.5, 0.8, 11 + k * 1.5);
-      lk.set(-4.2, 0.3, 0);
+      pos.set(Math.sin(ang) * (1.6 + k * 1.6), 0.85, 6.6 + k * 0.8);
+      lk.set(-1.6, 0.35, 0);
     }
 
     const lambda = 3.2;

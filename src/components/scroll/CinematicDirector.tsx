@@ -6,7 +6,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { scrollBus } from "@/lib/scroll-bus";
-import { PANELS, CARDS, NAV_TARGETS } from "@/lib/timeline";
+import { PANELS, CARDS, NAV_TARGETS, morphAt, STAGE_LABELS } from "@/lib/timeline";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -52,6 +52,13 @@ export function CinematicDirector() {
       const cards = Array.from(
         document.querySelectorAll<HTMLElement>(".cine-card"),
       );
+      const ticker = {
+        root: document.getElementById("cine-ticker"),
+        index: document.getElementById("cine-ticker-index"),
+        title: document.getElementById("cine-ticker-title"),
+        blurb: document.getElementById("cine-ticker-blurb"),
+      };
+      let lastStage = -1;
 
       const setPanel = (el: HTMLElement | null, o: number) => {
         if (!el) return;
@@ -86,6 +93,22 @@ export function CinematicDirector() {
           el.style.opacity = o.toFixed(3);
           el.style.visibility = o < 0.02 ? "hidden" : "visible";
         });
+
+        // Always-on stage label — updates at each morph milestone so no
+        // stretch of scroll (including pure transitions) ever reads blank.
+        const stage = Math.min(4, Math.max(0, Math.round(morphAt(p))));
+        if (stage !== lastStage) {
+          lastStage = stage;
+          const label = STAGE_LABELS[stage];
+          if (ticker.index) ticker.index.textContent = `0${stage + 1}/05`;
+          if (ticker.title) ticker.title.textContent = label.title;
+          if (ticker.blurb) ticker.blurb.textContent = label.blurb;
+          if (ticker.root) {
+            ticker.root.classList.remove("pulse");
+            void ticker.root.offsetWidth; // restart the animation
+            ticker.root.classList.add("pulse");
+          }
+        }
       }
 
       apply(0);

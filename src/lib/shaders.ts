@@ -1,9 +1,10 @@
 /**
- * Morph shader for the particle spine. One material, four target position
- * attributes, blended by a single uProgress (0=wave,1=net,2=latent,3=brain).
- * Curl-noise turbulence swells during transitions so points swarm rather than
- * slide. Additive soft round sprites, depth fade, HR-centric pulse in net state,
- * pointer nudge in wave/hero state.
+ * Morph shader for the particle spine. One material, five target position
+ * attributes, blended by a single uProgress (0=wave,1=helix,2=net,3=latent,
+ * 4=brain). Curl-noise turbulence swells while actively morphing (gated by
+ * CPU-computed velocity, uSwarm) so points swarm rather than slide, and
+ * settles the instant scroll stops. Additive soft round sprites, depth fade,
+ * HR-centric pulse in the net state, pointer nudge in the wave/hero state.
  */
 
 export const morphVert = /* glsl */ `
@@ -11,12 +12,15 @@ export const morphVert = /* glsl */ `
   uniform float uTime;
   uniform float uPulse;
   uniform float uSize;
+  uniform float uSizeScale;
   uniform float uPixelRatio;
   uniform float uSwarm;
   uniform vec3  uPointer;
   uniform float uPointerActive;
 
   attribute vec3 aWave;
+  attribute vec3 aHelix;
+  attribute float aHelixTone;
   attribute vec3 aNet;
   attribute vec3 aLatent;
   attribute vec3 aBrain;
@@ -43,19 +47,27 @@ export const morphVert = /* glsl */ `
     vec3 cWave = vec3(0.42, 0.78, 1.0);   // signal blue
     vec3 cNet  = vec3(0.29, 0.95, 0.63);  // phosphor
     vec3 cBrn  = vec3(0.35, 0.85, 0.78);  // teal
+    // Helix backbone strands lean toward the states either side of them —
+    // strand A toward signal-blue, strand B toward phosphor — so the color
+    // story reads as a continuous thread, not a hard cut.
+    vec3 cHelix = mix(cWave, cNet, aHelixTone);
 
     float g = 0.0; // extra glow
 
     if (uProgress < 1.0){
       float k = uProgress;
-      pos = mix(aWave, aNet, k);
-      col = mix(cWave, cNet, k);
+      pos = mix(aWave, aHelix, k);
+      col = mix(cWave, cHelix, k);
     } else if (uProgress < 2.0){
       float k = uProgress - 1.0;
+      pos = mix(aHelix, aNet, k);
+      col = mix(cHelix, cNet, k);
+    } else if (uProgress < 3.0){
+      float k = uProgress - 2.0;
       pos = mix(aNet, aLatent, k);
       col = mix(cNet, aClusterColor, k);
     } else {
-      float k = clamp(uProgress - 2.0, 0.0, 1.0);
+      float k = clamp(uProgress - 3.0, 0.0, 1.0);
       pos = mix(aLatent, aBrain, k);
       col = mix(aClusterColor, cBrn, k);
     }
@@ -65,8 +77,9 @@ export const morphVert = /* glsl */ `
     vec3 noise = hash3(pos * 0.6 + aSeed + uTime * 0.15);
     pos += noise * uSwarm * 0.9;
 
-    // Forward-pass pulse: light a travelling band across net layers.
-    if (uProgress > 0.55 && uProgress < 1.55){
+    // Forward-pass pulse: light a travelling band across net layers
+    // (net is state index 2 — window straddles its full transition-in/out).
+    if (uProgress > 1.55 && uProgress < 2.55){
       float band = 1.0 - smoothstep(0.0, 0.14, abs(aNetLayer - uPulse));
       g += band * 0.9;
       col = mix(col, cNet, band * 0.6);
@@ -90,7 +103,7 @@ export const morphVert = /* glsl */ `
 
     gl_Position = projectionMatrix * mv;
     float sizeJitter = 0.7 + 0.6 * fract(aSeed * 1.37);
-    gl_PointSize = uSize * uPixelRatio * sizeJitter * (1.0 / -mv.z);
+    gl_PointSize = uSize * uSizeScale * uPixelRatio * sizeJitter * (1.0 / -mv.z);
   }
 `;
 
