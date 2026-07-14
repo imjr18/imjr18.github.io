@@ -148,9 +148,10 @@ body {
   position: relative;
 }
 
+/* Keep in sync with CINE_LENGTH_VH in lib/timeline.ts */
 .cinematic #cine {
-  height: 880vh;
-  height: 880svh;
+  height: 620vh;
+  height: 620svh;
 }
 
 .cinematic .cine-stage {

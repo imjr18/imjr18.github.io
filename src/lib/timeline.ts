@@ -5,7 +5,10 @@
  * these — nothing is hardcoded twice.
  */
 
-export const CINE_LENGTH_VH = 880;
+// Total scroll distance for the whole cinematic. Keep in sync with the
+// `.cinematic #cine` height in globals.css. All windows below are fractions,
+// so changing this one number compresses/stretches the entire experience.
+export const CINE_LENGTH_VH = 620;
 
 /** Panel visibility windows [in, out] as progress fractions. */
 export const PANELS = {
