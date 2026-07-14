@@ -12,15 +12,15 @@ export const CINE_LENGTH_VH = 620;
 
 /** Panel visibility windows [in, out] as progress fractions. */
 export const PANELS = {
-  hero: { in: 0, out: 0.07 },
-  work: { in: 0.28, out: 0.44 },
-  about: { in: 0.875, out: 1.0 },
+  hero: { in: 0, out: 0.06 },
+  work: { in: 0.3, out: 0.45 },
+  about: { in: 0.9, out: 1.0 },
 } as const;
 
-/** Latent-cluster segment: where the 4 project cards live. */
-export const CARD_SPAN: [number, number] = [0.45, 0.8];
+/** Latent-cluster segment: where the project cards live. */
+export const CARD_SPAN: [number, number] = [0.46, 0.82];
 
-const CARD_COUNT = 4;
+const CARD_COUNT = 5;
 const cardStep = (CARD_SPAN[1] - CARD_SPAN[0]) / CARD_COUNT;
 
 /** Per-project card windows, evenly tiled across CARD_SPAN — no manual drift. */
@@ -38,14 +38,15 @@ export const CARDS: { in: number; hold: number; out: number }[] = Array.from(
  * in-flight transitions between the two bracketing states.
  */
 export const MORPH = {
-  waveHold: 0.07,
-  toHelix: [0.07, 0.13],
-  helixHold: [0.13, 0.21],
-  toNet: [0.21, 0.27],
-  netHold: [0.27, 0.39],
-  toLatent: [0.39, CARD_SPAN[0]],
+  waveHold: 0.06,
+  toHelix: [0.06, 0.12],
+  // Helix hold is deliberately WIDE so a fast flick can't skip past it.
+  helixHold: [0.12, 0.27],
+  toNet: [0.27, 0.33],
+  netHold: [0.33, 0.42],
+  toLatent: [0.42, CARD_SPAN[0]],
   latentHold: CARD_SPAN,
-  toBrain: [CARD_SPAN[1], 0.87],
+  toBrain: [CARD_SPAN[1], 0.89],
 } as const;
 
 export function morphAt(p: number): number {
@@ -73,7 +74,7 @@ export const STAGE_LABELS: { title: string; blurb: string }[] = [
   { title: "SIGNAL", blurb: "biosignal waveform — ECG · EEG" },
   { title: "CODE", blurb: "the double helix — biology's own encoding" },
   { title: "FORWARD PASS", blurb: "a signal becomes a computation" },
-  { title: "LATENT SPACE", blurb: "four projects, four clusters" },
+  { title: "LATENT SPACE", blurb: "five projects, five clusters" },
   { title: "COGNITION", blurb: "point-cloud cortex" },
 ];
 

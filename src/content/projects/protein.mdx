@@ -1,0 +1,26 @@
+import { Figure } from "@/components/ui/Figure";
+import { MotifMiningDiagram } from "@/components/projects/diagrams";
+
+## Problem
+
+A broadly protective ("pan-virus") vaccine needs antigenic targets with two properties at once: they must be **conserved across strains** — so the immune response still recognises next season's variant — and **surface-exposed** — so a neutralising antibody can physically reach them. Those regions are rare, and the search space is enormous: hundreds of proteins per proteome, across a viral family that mutates continuously. Screening candidates in the wet lab is the bottleneck, so the useful contribution is computational: shrink the candidate set to the few motifs most likely to survive validation.
+
+## Approach
+
+The pipeline is a **hybrid sequence–structure motif miner**. Protein sequences are encoded with attention-based embeddings that capture long-range dependencies a position-independent scan would miss; structural context and epitope prediction are layered on to score surface exposure and antigenicity.
+
+<Figure id="1" caption="CONSERVED, SURFACE-EXPOSED MOTIF-MINING PIPELINE">
+  <MotifMiningDiagram />
+</Figure>
+
+A motif is only promoted if it clears **both** filters simultaneously — high cross-strain conservation *and* predicted surface exposure. That conjunction is the whole point: conservation alone finds buried structural residues that antibodies never see, and exposure alone finds hypervariable loops that mutate away between strains. The intersection is where durable, broadly protective targets live.
+
+## Results
+
+Applied across **1,200+ viral proteomes**, the pipeline surfaces regions exceeding **87% cross-strain conservation** while contracting the candidate target space by roughly **65%** and preserving predicted neutralising epitopes. In practical terms, that is a ~3× reduction in the sequences a lab would need to express and assay — the difference between an intractable screen and a focused one.
+
+## Rigor notes / what I learned
+
+- The conservation-and-exposure conjunction is a **specificity mechanism**, not a heuristic: each filter alone has a well-understood failure mode, and the intersection is what makes the shortlist defensible.
+- The output is a **prioritisation**, not a validated vaccine — the deliverable is a ranked, wet-lab-ready candidate set, and every downstream claim depends on that validation.
+- The intended setting is deployment-aware: rapid antigen prioritisation for emerging variants and peptide-vaccine design in outbreak and low-resource public-health contexts, where reducing the validation burden is the point.

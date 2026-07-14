@@ -85,7 +85,7 @@ export const morphVert = /* glsl */ `
     // Turbulence is gated by morph VELOCITY (uSwarm from the CPU), so points
     // swarm only while actively morphing and settle the moment scroll stops.
     vec3 noise = hash3(pos * 0.6 + aSeed + uTime * 0.15);
-    pos += noise * uSwarm * 0.9;
+    pos += noise * uSwarm * 0.6;
 
     // Forward-pass pulse: light a travelling band across net layers
     // (net is state index 2 — window straddles its full transition-in/out).

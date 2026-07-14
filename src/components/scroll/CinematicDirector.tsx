@@ -32,11 +32,11 @@ export function CinematicDirector() {
 
       const lenis = new Lenis({
         autoRaf: false,
-        // Snappier catch-up + damped wheel input so trackpad inertia doesn't
-        // overshoot far past where the gesture stopped.
-        lerp: 0.11,
-        wheelMultiplier: 0.8,
-        touchMultiplier: 1.4,
+        // Momentum tuned so a fast flick decays quickly and can't sail past a
+        // short narrative beat (the double helix) before it forms on screen.
+        lerp: 0.14,
+        wheelMultiplier: 0.7,
+        touchMultiplier: 1.3,
       });
       lenis.on("scroll", ScrollTrigger.update);
       const tickerFn = (t: number) => lenis.raf(t * 1000);

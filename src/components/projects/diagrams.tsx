@@ -238,3 +238,47 @@ export function OrchestrationDiagram() {
     </svg>
   );
 }
+
+/* ── 05 · Protein: conserved surface-exposed motif mining ──────── */
+export function MotifMiningDiagram() {
+  const R = "#ff7eb6";
+  return (
+    <svg viewBox="0 0 560 220" width="100%" role="img" aria-label="Conserved surface-exposed motif mining pipeline">
+      {/* proteome corpus */}
+      <rect x={8} y={64} width={104} height={92} rx={3} fill={box.fill} stroke={HAIR} />
+      <text x={60} y={54} textAnchor="middle" style={mono} fontSize={10} fill={INK2}>1,200+ proteomes</text>
+      {[0, 1, 2, 3, 4, 5].map((r) =>
+        [0, 1, 2, 3, 4, 5, 6, 7].map((c) => (
+          <rect key={`${r}-${c}`} x={16 + c * 11} y={72 + r * 13} width={8} height={9} rx={1}
+            fill={(r + c) % 3 === 0 ? "rgba(255,126,182,0.5)" : "rgba(107,199,255,0.18)"} />
+        )),
+      )}
+      {/* embeddings */}
+      <line x1={112} y1={110} x2={146} y2={110} stroke={HAIR} strokeWidth={1} markerEnd="url(#marr)" />
+      <rect x={146} y={80} width={112} height={60} rx={3} fill="#131b23" stroke={S} strokeWidth={1.1} />
+      <text x={202} y={104} textAnchor="middle" style={mono} fontSize={10.5} fill={S}>attention</text>
+      <text x={202} y={119} textAnchor="middle" style={mono} fontSize={10.5} fill={S}>embeddings</text>
+      <text x={202} y={133} textAnchor="middle" style={mono} fontSize={8.5} fill={INK2}>seq + structure</text>
+      {/* conservation filter */}
+      <line x1={258} y1={110} x2={292} y2={110} stroke={HAIR} strokeWidth={1} markerEnd="url(#marr)" />
+      <rect x={292} y={80} width={120} height={60} rx={3} fill={box.fill} stroke={A} />
+      <text x={352} y={102} textAnchor="middle" style={mono} fontSize={10} fill={A}>conserved</text>
+      <text x={352} y={116} textAnchor="middle" style={mono} fontSize={10} fill={A}>&amp; surface-exposed</text>
+      <text x={352} y={131} textAnchor="middle" style={mono} fontSize={8.5} fill={INK2}>&gt;87% cross-strain</text>
+      {/* epitope shortlist */}
+      <line x1={412} y1={110} x2={446} y2={110} stroke={HAIR} strokeWidth={1} markerEnd="url(#marr)" />
+      <rect x={446} y={82} width={106} height={56} rx={3} fill="#131b23" stroke={R} strokeWidth={1.2} />
+      <text x={499} y={104} textAnchor="middle" style={mono} fontSize={10.5} fill={R}>epitope</text>
+      <text x={499} y={119} textAnchor="middle" style={mono} fontSize={10.5} fill={R}>shortlist</text>
+      <text x={499} y={133} textAnchor="middle" style={mono} fontSize={8.5} fill={INK2}>−65% target space</text>
+      <text x={280} y={186} textAnchor="middle" style={mono} fontSize={9} fill={INK2}>
+        mine motifs that are conserved across strains AND exposed on the viral surface → pan-virus targets
+      </text>
+      <defs>
+        <marker id="marr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill={INK2} />
+        </marker>
+      </defs>
+    </svg>
+  );
+}

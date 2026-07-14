@@ -4,10 +4,10 @@ export const site = {
   title:
     "Jawahar Ranganathan — Biomedical Deep Learning, Multi-Agent RL & Agentic AI",
   description:
-    "CS + Economics at BITS Pilani. Research intern at Temple building deep learning for wearable physiological signals; previously data analytics at Roche.",
+    "CS + Economics at BITS Pilani. Deep learning with calibrated uncertainty, multi-agent RL as mechanism design, and verifiable agentic systems. Research intern at Temple.",
   headline: "I build learning systems that read the body and reason about the world.",
   subline:
-    "Biomedical deep learning, multi-agent RL, and agentic AI. CS + Economics at BITS Pilani. Currently a research intern at Temple working on deep learning for wearable physiological signals; previously data analytics at Roche.",
+    "I work where deep learning meets rigorous evaluation: multimodal transformers with calibrated uncertainty, multi-agent reinforcement learning framed as mechanism design, and agentic systems with verifiable behaviour. CS + Economics at BITS Pilani; research intern at Temple on wearable physiological-signal models, previously data analytics at Roche.",
   kicker: "CS + Economics · BITS Pilani",
   // Personal address — internship emails expire, so the site shows the Gmail.
   email: "jawahar.ranganathan@gmail.com",
@@ -29,6 +29,9 @@ export const site = {
     "Uncertainty Quantification",
     "Agentic AI",
     "Medical Image Segmentation",
+    "Computational Immunology",
+    "Epitope Prediction",
+    "Mechanism Design",
   ],
 } as const;
 

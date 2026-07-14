@@ -1,7 +1,7 @@
 import puppeteer from "puppeteer-core";
 
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-const BASE = process.env.BASE || "http://localhost:4322";
+const BASE = process.env.BASE || "http://localhost:4392";
 
 async function run(label, opts, steps) {
   const browser = await puppeteer.launch({

@@ -1,4 +1,9 @@
-export type ProjectSlug = "glucose" | "lesion" | "ridesharing" | "goodfoods";
+export type ProjectSlug =
+  | "glucose"
+  | "lesion"
+  | "ridesharing"
+  | "goodfoods"
+  | "protein";
 
 export interface Metric {
   value: string;

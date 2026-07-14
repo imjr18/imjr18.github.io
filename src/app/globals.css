@@ -242,6 +242,14 @@ body {
   z-index: 0;
   pointer-events: none;
 }
+/* R3F sets pointer-events:auto on the canvas inline; a fixed canvas paints
+   above the static Contact/Footer sections and would eat their clicks. Force
+   the whole GL layer non-interactive — hero cursor input comes from a window
+   listener, so nothing is lost. */
+#gl-root,
+#gl-root * {
+  pointer-events: none !important;
+}
 
 /* Hero poster (static fallback backdrop; fades when the live scene is up) */
 .hero-poster {

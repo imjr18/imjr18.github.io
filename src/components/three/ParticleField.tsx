@@ -96,14 +96,18 @@ export function ParticleField({ count }: { count: number }) {
     const p = scrollBus.progress.p;
 
     // Damp morph state toward the scroll-derived target (framerate-independent).
+    // Lambda raised from 6 → 8.5 so a fast flick can't cut the corner and skip
+    // a narrow state (the double helix) without it ever forming on screen.
     const target = morphAt(p);
-    u.uProgress.value = damp(u.uProgress.value, target, 6, dt);
+    u.uProgress.value = damp(u.uProgress.value, target, 8.5, dt);
     u.uTime.value = state.clock.elapsedTime;
 
     // Swarm turbulence tracks how far the morph still has to travel: it swells
     // while morphing and eases to 0 once the state settles (no perpetual jitter).
+    // Capped so even mid-transition the underlying shape stays legible — a
+    // fully-scattered swarm was hiding the helix during fast scrolls.
     const dist = Math.abs(target - u.uProgress.value);
-    u.uSwarm.value = damp(u.uSwarm.value, Math.min(1, dist * 3), 9, dt);
+    u.uSwarm.value = damp(u.uSwarm.value, Math.min(0.7, dist * 2.4), 10, dt);
     (window as unknown as { __cineSwarm?: number }).__cineSwarm = u.uSwarm.value;
 
     // Forward-pass pulse cycles while the net is on screen.
