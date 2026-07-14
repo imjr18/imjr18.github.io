@@ -184,6 +184,16 @@ body {
   visibility: visible;
 }
 
+/* Short viewports: pin panel content just below the fixed nav and let it grow
+   downward, so section headings are never clipped at the top (they clip at the
+   bottom instead, which is harmless). Tall screens keep the centered look. */
+@media (max-height: 820px) {
+  .cinematic .cine-panel {
+    align-items: flex-start;
+    padding-top: 5.5rem;
+  }
+}
+
 /* Card container: a responsive grid in fallback; dissolves so cards can
    position against the sticky stage in cinematic mode. */
 .work-cards {

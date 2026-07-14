@@ -6,7 +6,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { scrollBus } from "@/lib/scroll-bus";
-import { PANELS, CARDS, NAV_TARGETS, morphAt, STAGE_LABELS } from "@/lib/timeline";
+import { PANELS, CARDS, NAV_TARGETS, MORPH, morphAt, STAGE_LABELS } from "@/lib/timeline";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -38,7 +38,16 @@ export function CinematicDirector() {
         wheelMultiplier: 0.7,
         touchMultiplier: 1.3,
       });
-      lenis.on("scroll", ScrollTrigger.update);
+      // Section-snap state — see the snap machinery defined after `master`.
+      let lastDir = 1;
+      let isSnapping = false;
+      let snapTimer = 0;
+
+      lenis.on("scroll", () => {
+        ScrollTrigger.update();
+        if (lenis.direction !== 0) lastDir = lenis.direction;
+        scheduleSnap();
+      });
       const tickerFn = (t: number) => lenis.raf(t * 1000);
       gsap.ticker.add(tickerFn);
       gsap.ticker.lagSmoothing(0);
@@ -129,21 +138,87 @@ export function CinematicDirector() {
         },
       });
 
-      // Nav → scroll wiring, in terms of the master range or DOM offsets.
+      // ── Section snapping ────────────────────────────────────────────────
+      // Never rest mid-animation: after scrolling stops, ease to the section in
+      // the direction of travel so each gesture lands on the next beat, with the
+      // morph playing during the glide. Past the final beat, scrolling is free
+      // so the timeline/contact below read normally.
+      const snapProgs = [
+        0,
+        (MORPH.helixHold[0] + MORPH.helixHold[1]) / 2,
+        (MORPH.netHold[0] + MORPH.netHold[1]) / 2,
+        ...CARDS.map((c) => c.hold),
+        0.95,
+      ];
+
+      function maybeSnap(target: number) {
+        const p = master.progress;
+        if (Math.abs(target - p) < 0.006) return;
+        const st = master.start as number;
+        const en = master.end as number;
+        isSnapping = true;
+        lenis.scrollTo(st + target * (en - st), {
+          duration: 0.7,
+          lock: true,
+          easing: (t: number) => 1 - Math.pow(1 - t, 3),
+          onComplete: () => {
+            isSnapping = false;
+          },
+        });
+      }
+
+      function runSnap() {
+        if (isSnapping || !master.isActive) return;
+        const p = master.progress;
+        const last = snapProgs[snapProgs.length - 1];
+        if (p >= last - 0.005) return; // past the final beat → free scroll out
+        let lo = snapProgs[0];
+        let hi = last;
+        for (let i = 0; i < snapProgs.length - 1; i++) {
+          if (p >= snapProgs[i] && p <= snapProgs[i + 1]) {
+            lo = snapProgs[i];
+            hi = snapProgs[i + 1];
+            break;
+          }
+        }
+        const frac = hi > lo ? (p - lo) / (hi - lo) : 0;
+        // Commit forward easily when moving down; backward when moving up.
+        const target =
+          lastDir >= 0 ? (frac > 0.22 ? hi : lo) : frac < 0.78 ? lo : hi;
+        maybeSnap(target);
+      }
+
+      function scheduleSnap() {
+        if (isSnapping || !master.isActive) return;
+        window.clearTimeout(snapTimer);
+        snapTimer = window.setTimeout(runSnap, 140);
+      }
+
+      // Nav → scroll wiring. Guarded with isSnapping so the idle snap doesn't
+      // re-fire on top of a deliberate jump.
       scrollBus.scrollToSection = (id: string) => {
+        isSnapping = true;
+        const done = () => {
+          isSnapping = false;
+        };
         if (id === "top") {
-          lenis.scrollTo(0, { duration: 1.1 });
+          lenis.scrollTo(0, { duration: 1.0, lock: true, onComplete: done });
           return;
         }
         const frac = NAV_TARGETS[id];
         if (frac != null) {
           const st = master.start as number;
           const en = master.end as number;
-          lenis.scrollTo(st + frac * (en - st), { duration: 1.2 });
+          lenis.scrollTo(st + frac * (en - st), {
+            duration: 1.1,
+            lock: true,
+            onComplete: done,
+          });
           return;
         }
         const el = document.getElementById(id);
-        if (el) lenis.scrollTo(el, { offset: -64, duration: 1.2 });
+        if (el) lenis.scrollTo(el, { offset: -64, duration: 1.1, lock: true, onComplete: done });
+        else done();
       };
 
       // Pin positions depend on layout; refresh after fonts settle.
@@ -159,6 +234,7 @@ export function CinematicDirector() {
       return () => {
         cancelled = true;
         window.clearTimeout(t1);
+        window.clearTimeout(snapTimer);
         gsap.ticker.remove(tickerFn);
         master.kill();
         lenis.destroy();
