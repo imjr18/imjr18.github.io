@@ -92,6 +92,7 @@ export default function RootLayout({
         <PersonJsonLd />
       </head>
       <body>
+        <div className="aurora" aria-hidden />
         <a href="#main" className="skip-link">
           Skip to content
         </a>

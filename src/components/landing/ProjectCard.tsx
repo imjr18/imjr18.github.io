@@ -29,7 +29,7 @@ export function ProjectCard({ project }: { project: Project }) {
           />
         </div>
 
-        <h3 className="mt-3 font-display text-[1.35rem] font-600 leading-tight text-ink0">
+        <h3 className="mt-3 font-display text-[1.35rem] font-semibold leading-tight text-ink0">
           {project.title}
         </h3>
         <p className="mt-2 text-[14.5px] leading-relaxed text-ink1">

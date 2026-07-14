@@ -25,10 +25,11 @@ export function Nav() {
       <div className="mx-auto flex w-full max-w-[1120px] items-center justify-between px-5 py-3 sm:px-8">
         <Link
           href="/"
-          className="font-mono text-[13px] font-500 tracking-[0.02em] text-ink0"
+          className="font-mono text-[13px] font-medium tracking-[0.02em] text-ink0"
           onClick={(e) => go(e, "top")}
         >
           <span className="text-phosphor">&gt;</span> jr
+          <span className="caret" aria-hidden />
         </Link>
         <ul className="flex items-center gap-5 sm:gap-7">
           {LINKS.map((l) => (

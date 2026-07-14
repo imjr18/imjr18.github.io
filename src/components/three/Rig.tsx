@@ -57,11 +57,12 @@ export function Rig() {
       pos.set(cx * 0.55, cy * 0.5 + 0.4, 8.2);
       lk.set(cx, cy, cz);
     } else {
-      // Brain: pull back with a slow orbit.
+      // Brain: pull back with a slow orbit, framed right-of-center so the
+      // About copy on the left never fights it.
       const k = THREE.MathUtils.clamp((p - CARD_SPAN[1]) / (1 - CARD_SPAN[1]), 0, 1);
       const ang = state.clock.elapsedTime * 0.12;
-      pos.set(Math.sin(ang) * (2 + k * 2), 0.8, 11 + k * 1.5);
-      lk.set(0, 0.3, 0);
+      pos.set(Math.sin(ang) * (2 + k * 2) - 1.5, 0.8, 11 + k * 1.5);
+      lk.set(-4.2, 0.3, 0);
     }
 
     const lambda = 3.2;

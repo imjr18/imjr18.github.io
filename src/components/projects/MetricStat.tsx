@@ -55,7 +55,7 @@ export function MetricStat({ metric }: { metric: Metric }) {
 
   return (
     <div ref={ref} className="ticks border border-hairline bg-bg1 px-4 py-3.5">
-      <div className="font-display text-2xl font-600 leading-none text-phosphor tabular-nums sm:text-[1.75rem]">
+      <div className="font-display text-2xl font-semibold leading-none text-phosphor tabular-nums sm:text-[1.75rem]">
         {display}
       </div>
       <div className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-ink1">

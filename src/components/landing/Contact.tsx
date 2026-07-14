@@ -18,7 +18,7 @@ export function Contact() {
       <SectionHeading index="06" label="CONTACT" />
       <div className="mt-8 flex flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="max-w-[46ch] font-display text-[clamp(1.4rem,3vw,2rem)] font-500 leading-tight text-ink0">
+          <p className="max-w-[46ch] font-display text-[clamp(1.4rem,3vw,2rem)] font-medium leading-tight text-ink0">
             Open to research and engineering roles in ML.
           </p>
           <a

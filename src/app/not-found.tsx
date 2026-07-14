@@ -9,7 +9,7 @@ export default function NotFound() {
       <p className="font-mono text-[13px] uppercase tracking-[0.2em] text-alert">
         ERROR 404 — SIGNAL LOST
       </p>
-      <h1 className="mt-4 font-display text-[clamp(2.5rem,10vw,6rem)] font-600 leading-none text-ink0">
+      <h1 className="mt-4 font-display text-[clamp(2.5rem,10vw,6rem)] font-semibold leading-none text-ink0">
         404
       </h1>
       <p className="mt-4 max-w-[42ch] text-ink1">

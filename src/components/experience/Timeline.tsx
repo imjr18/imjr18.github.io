@@ -32,7 +32,7 @@ export function Timeline() {
               aria-hidden
             />
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <h3 className="font-display text-[1.1rem] font-500 text-ink0">
+              <h3 className="font-display text-[1.1rem] font-medium text-ink0">
                 {e.role}
               </h3>
               <span className="text-ink1">· {e.org}</span>

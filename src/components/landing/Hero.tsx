@@ -4,12 +4,16 @@ import { GitHubIcon, LinkedInIcon, MailIcon, DownloadIcon } from "@/components/u
 /** SSR'd hero — this h1 is the LCP element, never the canvas. */
 export function Hero() {
   return (
-    <div className="mx-auto w-full max-w-[1120px] px-5 sm:px-8">
+    <div className="cine-scrim mx-auto w-full max-w-[1120px] px-5 sm:px-8">
       <p className="font-mono text-[13px] uppercase tracking-[0.22em] text-phosphor">
         {site.kicker}
       </p>
-      <h1 className="mt-5 max-w-[16ch] font-display text-[clamp(2.1rem,6.2vw,4.5rem)] font-600 leading-[1.02] tracking-[-0.025em] text-ink0">
-        {site.headline}
+      <h1 className="mt-5 max-w-[16ch] text-balance font-display text-[clamp(2.1rem,6.2vw,4.6rem)] font-semibold leading-[1.02] tracking-[-0.03em] text-ink0">
+        I build learning systems that{" "}
+        <span className="bg-linear-to-r from-signal to-phosphor bg-clip-text text-transparent">
+          read the body
+        </span>{" "}
+        and reason about the world.
       </h1>
       <p className="mt-6 max-w-[62ch] text-[clamp(1rem,1.6vw,1.15rem)] leading-relaxed text-ink1">
         {site.subline}

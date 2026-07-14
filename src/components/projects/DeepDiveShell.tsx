@@ -41,7 +41,7 @@ export function DeepDiveShell({
         </nav>
 
         {/* title */}
-        <h1 className="max-w-3xl font-display text-[clamp(2rem,5vw,3.25rem)] font-600 leading-[1.05] tracking-[-0.02em] text-ink0">
+        <h1 className="max-w-3xl font-display text-[clamp(2rem,5vw,3.25rem)] font-semibold leading-[1.05] tracking-[-0.02em] text-ink0">
           {project.title}
         </h1>
         <p className="mt-5 max-w-2xl text-[1.05rem] leading-relaxed text-ink1">

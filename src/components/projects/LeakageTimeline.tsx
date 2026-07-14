@@ -93,7 +93,7 @@ export function LeakageTimeline() {
             />
             {s.kind === "alert" ? (
               <div className="ticks border border-alert/50 bg-alert/[0.06] p-3.5">
-                <div className="flex items-center gap-2 font-mono text-[12px] font-500 uppercase tracking-[0.1em] text-alert">
+                <div className="flex items-center gap-2 font-mono text-[12px] font-medium uppercase tracking-[0.1em] text-alert">
                   <span aria-hidden>⚠</span>
                   <span>{s.version} — AUDIT</span>
                 </div>
@@ -108,7 +108,7 @@ export function LeakageTimeline() {
               <div>
                 <div className="flex items-baseline gap-2.5">
                   <span
-                    className="font-mono text-[12px] font-500"
+                    className="font-mono text-[12px] font-medium"
                     style={{ color: COLOR[s.kind] }}
                   >
                     {s.version}

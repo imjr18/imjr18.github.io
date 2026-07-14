@@ -386,6 +386,115 @@ body {
   color: var(--color-ink0);
 }
 
+/* ── Ambient aurora — two blurred glow fields drifting very slowly.
+      Transform-only animation (GPU-cheap), sits behind everything. ── */
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.aurora::before,
+.aurora::after {
+  content: "";
+  position: absolute;
+  width: 62vmax;
+  height: 62vmax;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.13;
+  will-change: transform;
+}
+.aurora::before {
+  background: radial-gradient(circle, #6bc7ff, transparent 62%);
+  top: -22vmax;
+  left: -14vmax;
+  animation: aurora-a 46s ease-in-out infinite alternate;
+}
+.aurora::after {
+  background: radial-gradient(circle, #4af2a1, transparent 62%);
+  bottom: -26vmax;
+  right: -16vmax;
+  animation: aurora-b 58s ease-in-out infinite alternate;
+}
+@keyframes aurora-a {
+  to {
+    transform: translate3d(13vw, 9vh, 0) scale(1.22);
+  }
+}
+@keyframes aurora-b {
+  to {
+    transform: translate3d(-11vw, -7vh, 0) scale(0.94);
+  }
+}
+
+/* ── Text scrim: keeps panel copy legible over dense particles ──── */
+.cinematic .cine-scrim {
+  position: relative;
+}
+.cinematic .cine-scrim::before {
+  content: "";
+  position: absolute;
+  inset: -3rem -4rem;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 75% 65% at 35% 45%,
+    rgba(7, 10, 13, 0.92),
+    rgba(7, 10, 13, 0.55) 55%,
+    transparent 78%
+  );
+}
+
+/* ── WebGL layer fades: in when ready, out past the cinematic ───── */
+#gl-root {
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+.gl-ready #gl-root {
+  opacity: 1;
+}
+.cine-past #gl-root {
+  opacity: 0;
+}
+
+/* ── Smoothness ─────────────────────────────────────────────────── */
+body {
+  overflow-x: clip;
+}
+html.cinematic {
+  overscroll-behavior-y: none;
+}
+.cinematic .cine-panel,
+.cinematic .cine-card {
+  will-change: opacity, transform;
+}
+
+/* ── ECG sweep: a bright segment travels the poster waveform ────── */
+.ecg-draw {
+  stroke-dasharray: 0.16 0.88;
+  animation: ecg-run 7s linear infinite;
+}
+@keyframes ecg-run {
+  to {
+    stroke-dashoffset: -1.04;
+  }
+}
+
+/* ── Terminal caret blink (nav brand) ───────────────────────────── */
+.caret::after {
+  content: "_";
+  margin-left: 2px;
+  color: var(--color-phosphor);
+  animation: caret-blink 1.15s steps(1) infinite;
+}
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
 /* ── Motion doctrine: one global kill-switch ───────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *,

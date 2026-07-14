@@ -37,6 +37,15 @@ export function HeroPoster() {
           stroke="url(#wave)"
           strokeWidth="1.6"
         />
+        <path
+          className="ecg-draw"
+          pathLength={1}
+          d="M0 150 L280 150 L300 150 L312 60 L326 240 L340 110 L354 150 L520 150 L544 150 L556 95 L570 205 L584 150 L900 150 L918 150 L930 40 L946 250 L960 120 L974 150 L1200 150"
+          fill="none"
+          stroke="#4af2a1"
+          strokeWidth="2.2"
+          opacity="0.9"
+        />
       </svg>
       <div className="graph-paper absolute inset-0 opacity-40" />
     </div>

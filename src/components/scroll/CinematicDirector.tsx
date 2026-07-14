@@ -97,6 +97,9 @@ export function CinematicDirector() {
         onUpdate: (self) => apply(self.progress),
         onToggle: (self) => {
           scrollBus.active.v = self.isActive;
+          // Fade the canvas out (and stop rendering) once the reader scrolls
+          // past the cinematic container into the timeline/footer.
+          document.documentElement.classList.toggle("cine-past", !self.isActive);
           window.dispatchEvent(
             new CustomEvent("cine-active", { detail: self.isActive }),
           );
