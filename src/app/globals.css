@@ -1,26 +1,403 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ── Design tokens ─────────────────────────────────────────────── */
+@theme {
+  --color-bg0: #070a0d;
+  --color-bg1: #0d1318;
+  --color-bg2: #131b23;
+  --color-ink0: #e8eef4;
+  --color-ink1: #9aa8b5;
+  --color-ink2: #5f6e7c;
+  --color-phosphor: #4af2a1;
+  --color-amber: #ffb454;
+  --color-signal: #6bc7ff;
+  --color-alert: #ff6b6b;
+  --color-hairline: rgba(232, 238, 244, 0.08);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── Base ──────────────────────────────────────────────────────── */
+html {
+  background: var(--color-bg0);
+  scrollbar-color: var(--color-ink2) var(--color-bg0);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg0);
+  color: var(--color-ink0);
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(74, 242, 161, 0.25);
+  color: var(--color-ink0);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-phosphor);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.skip-link {
+  position: fixed;
+  top: -100px;
+  left: 16px;
+  z-index: 200;
+  padding: 8px 14px;
+  background: var(--color-bg2);
+  border: 1px solid var(--color-phosphor);
+  color: var(--color-phosphor);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  transition: top 150ms ease;
+}
+.skip-link:focus-visible {
+  top: 16px;
+}
+
+/* ── Texture: graph paper ──────────────────────────────────────── */
+.graph-paper {
+  background-image:
+    linear-gradient(rgba(232, 238, 244, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(232, 238, 244, 0.045) 1px, transparent 1px),
+    linear-gradient(rgba(232, 238, 244, 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(232, 238, 244, 0.022) 1px, transparent 1px);
+  background-size:
+    96px 96px,
+    96px 96px,
+    24px 24px,
+    24px 24px;
+}
+
+/* ── Texture: CRT scanlines (preloader + card chrome only) ─────── */
+.scanlines {
+  position: relative;
+}
+.scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 3px,
+    rgba(7, 10, 13, 0.28) 3px,
+    rgba(7, 10, 13, 0.28) 4px
+  );
+}
+
+/* ── Bezel corner ticks ────────────────────────────────────────── */
+.ticks {
+  position: relative;
+}
+.ticks::before,
+.ticks::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  pointer-events: none;
+  transition: border-color 200ms ease;
+}
+.ticks::before {
+  top: -1px;
+  left: -1px;
+  border-top: 1px solid var(--color-ink2);
+  border-left: 1px solid var(--color-ink2);
+}
+.ticks::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 1px solid var(--color-ink2);
+  border-right: 1px solid var(--color-ink2);
+}
+.ticks:hover::before,
+.ticks:hover::after {
+  border-color: var(--color-phosphor);
+}
+
+/* ── Entrance reveal (once, killed by reduced-motion) ──────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity 300ms ease,
+    transform 300ms ease;
+}
+.reveal.revealed {
+  opacity: 1;
+  transform: none;
+}
+
+/* ── Cinematic mode layout ─────────────────────────────────────── */
+/* Default (SSR / no-JS / reduced-motion / no-WebGL): everything is
+   a normal vertical document. html.cinematic upgrades the landing
+   into the tall-scroll + sticky-stage experience. */
+
+#cine {
+  position: relative;
+}
+
+.cinematic #cine {
+  height: 760vh;
+  height: 760svh;
+}
+
+.cinematic .cine-stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  z-index: 10;
+}
+
+.cine-panel {
+  position: relative;
+}
+
+.cinematic .cine-panel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.cinematic .cine-panel > * {
+  pointer-events: auto;
+}
+.cinematic #panel-hero {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Card container: a responsive grid in fallback; dissolves so cards can
+   position against the sticky stage in cinematic mode. */
+.work-cards {
+  margin: 2.5rem auto 0;
+  width: 100%;
+  max-width: 1120px;
+  padding: 0 1.25rem;
+  display: grid;
+  gap: 1.25rem;
+}
+@media (min-width: 640px) {
+  .work-cards {
+    grid-template-columns: 1fr 1fr;
+    padding: 0 2rem;
+  }
+}
+.cinematic .work-cards {
+  display: contents;
+}
+
+.cine-card {
+  position: relative;
+}
+
+.cinematic .cine-card {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: clamp(1rem, 8vw, 9rem);
+  width: min(440px, calc(100vw - 2.5rem));
+  opacity: 0;
+  visibility: hidden;
+}
+.cinematic .cine-card[data-card="02"],
+.cinematic .cine-card[data-card="04"] {
+  right: auto;
+  left: clamp(1rem, 8vw, 9rem);
+}
+@media (max-width: 768px) {
+  .cinematic .cine-card,
+  .cinematic .cine-card[data-card="02"],
+  .cinematic .cine-card[data-card="04"] {
+    left: 50%;
+    right: auto;
+    top: auto;
+    bottom: max(4.5rem, env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    width: min(440px, calc(100vw - 2rem));
+  }
+}
+
+/* WebGL canvas layer sits behind the HTML stage */
+#gl-root {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Hero poster (static fallback backdrop; fades when the live scene is up) */
+.hero-poster {
+  transition: opacity 900ms ease;
+}
+.gl-ready .hero-poster {
+  opacity: 0;
+}
+
+/* ── Paper-style prose for deep-dive articles ──────────────────── */
+.prose-paper {
+  max-width: 68ch;
+  color: var(--color-ink1);
+}
+.prose-paper h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.35rem, 2.6vw, 1.8rem);
+  color: var(--color-ink0);
+  letter-spacing: -0.01em;
+  margin-top: 3.25rem;
+  margin-bottom: 1rem;
+  scroll-margin-top: 6rem;
+}
+.prose-paper h3 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.15rem;
+  color: var(--color-ink0);
+  margin-top: 2.25rem;
+  margin-bottom: 0.75rem;
+  scroll-margin-top: 6rem;
+}
+.prose-paper p {
+  margin-bottom: 1.1rem;
+}
+.prose-paper strong {
+  color: var(--color-ink0);
+  font-weight: 500;
+}
+.prose-paper a {
+  color: var(--color-phosphor);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(74, 242, 161, 0.35);
+  transition: border-color 150ms ease;
+}
+.prose-paper a:hover {
+  border-color: var(--color-phosphor);
+}
+.prose-paper ul,
+.prose-paper ol {
+  margin: 0 0 1.1rem 1.25rem;
+}
+.prose-paper ul {
+  list-style: none;
+}
+.prose-paper ul li {
+  position: relative;
+  padding-left: 1.1rem;
+  margin-bottom: 0.45rem;
+}
+.prose-paper ul li::before {
+  content: "▸";
+  position: absolute;
+  left: 0;
+  color: var(--color-ink2);
+  font-size: 0.8em;
+  top: 0.2em;
+}
+.prose-paper ol {
+  list-style: decimal;
+}
+.prose-paper ol li {
+  margin-bottom: 0.45rem;
+  padding-left: 0.25rem;
+}
+.prose-paper blockquote {
+  border-left: 2px solid var(--color-phosphor);
+  padding: 0.35rem 0 0.35rem 1.25rem;
+  margin: 1.75rem 0;
+  color: var(--color-ink0);
+  font-style: italic;
+}
+.prose-paper code:not(pre code) {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  color: var(--color-signal);
+  background: var(--color-bg1);
+  border: 1px solid var(--color-hairline);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+}
+.prose-paper pre {
+  background: var(--color-bg1);
+  border: 1px solid var(--color-hairline);
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  border-radius: 4px;
+}
+.prose-paper pre code {
+  font-family: var(--font-mono);
+  background: none;
+  border: none;
+  padding: 0;
+}
+.prose-paper table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.9rem;
+}
+.prose-paper th {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-ink2);
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--color-hairline);
+}
+.prose-paper td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--color-hairline);
+  color: var(--color-ink1);
+}
+.prose-paper .table-scroll {
+  overflow-x: auto;
+}
+
+/* KaTeX display math: never let it break the column */
+.prose-paper .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem 0;
+  margin: 1.5rem 0;
+}
+.prose-paper .katex {
+  font-size: 1.05em;
+  color: var(--color-ink0);
+}
+
+/* ── Motion doctrine: one global kill-switch ───────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
 }

@@ -1,0 +1,49 @@
+import { Figure } from "@/components/ui/Figure";
+import { GlucoseFusionDiagram } from "@/components/projects/diagrams";
+import { GlucoseMonitor } from "@/components/projects/GlucoseMonitor";
+
+## Problem
+
+Continuous glucose monitoring is invasive, and the signals that *do* correlate with glucose — heart rate, heart-rate variability, muscle and neural activity, cerebral blood flow — are noisy, sampled at different rates, and individually weak predictors. The question this project asks is narrow and honest: can a compact transformer fuse several such physiological signals to forecast glucose, and can it say *how much to trust* each prediction, on hardware a student actually has?
+
+## Approach
+
+Each modality gets its own lightweight transformer encoder. Fusion is **HR-centric**: heart rate supplies the query, and the other modalities supply keys and values, so the model attends *from* the most reliable signal *to* the rest.
+
+<Figure id="1" caption="HR-CENTRIC CROSS-MODAL ATTENTION FUSION">
+  <GlucoseFusionDiagram />
+</Figure>
+
+Attention is the standard scaled dot-product, with the query drawn from the HR stream:
+
+$$
+\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right) V
+$$
+
+The model has two output heads. One predicts the glucose value $\hat{\mu}$; the other predicts a per-sample log-variance $s$, trained with a **heteroscedastic Gaussian negative log-likelihood** so the network learns to be uncertain when the inputs are degraded:
+
+$$
+\mathcal{L} = \tfrac{1}{2} e^{-s}\,\lVert y - \hat{\mu} \rVert^2 + \tfrac{1}{2}\,s
+$$
+
+A **FOMAML** meta-learning outer loop adapts the shared backbone to individual users via a per-user token, and interpretability is probed with integrated gradients and attention rollout. Everything is sized around a single constraint — `d_model = 64`, chosen so the whole thing trains and runs inside **6 GB of VRAM**.
+
+### The uncertainty head is the point
+
+Below is the live idea, not a screenshot. Injecting noise degrades the inputs; the log-variance head responds by widening the ±2σ band while attention entropy climbs. Calibrated doubt is a feature, not an afterthought.
+
+<Figure id="2" caption="LIVE — UNCERTAINTY RESPONDS TO INPUT QUALITY">
+  <GlucoseMonitor />
+</Figure>
+
+## Results
+
+On the reported run the model reaches **21.81 mg/dL RMSE** with **100% of predictions in Clarke Error Grid zones A+B**.
+
+These numbers deserve their caveats and get them: this is a **single smoke-test run, not a validated clinical benchmark**. The supervised Parts A–C artifacts are not committed to the repo, so I state only what the run actually produced and invent nothing beyond it. The value here is the architecture and the calibration behavior, not a clinical claim.
+
+## Rigor notes / what I learned
+
+- 100% Clarke A+B on one run is encouraging and **not** evidence of clinical readiness — the honest framing matters more than the number.
+- Working corpora for the broader effort: OhioT1DM, PhysioCGM, MIT-BIH, CHB-MIT.
+- A model that reports *when it doesn't know* is more useful than a slightly more accurate model that is always confident. The log-variance head exists to make that behavior explicit.

@@ -1,0 +1,20 @@
+import puppeteer from "puppeteer-core";
+const CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+const b=await puppeteer.launch({executablePath:CHROME,headless:"new",args:["--no-sandbox","--use-gl=angle","--use-angle=swiftshader"]});
+const p=await b.newPage();const errs=[];
+p.on("console",m=>m.type()==="error"&&errs.push(m.text()));
+p.on("pageerror",e=>errs.push("PAGEERR: "+e.message));
+await p.goto("http://localhost:4330/projects/glucose/",{waitUntil:"networkidle0"});
+await new Promise(r=>setTimeout(r,800));
+const monitorCanvas=await p.$("canvas");
+const hasEntropy=await p.evaluate(()=>document.body.innerText.includes("attn entropy"));
+const btn=await p.evaluateHandle(()=>[...document.querySelectorAll("button")].find(b=>/inject noise/i.test(b.textContent)));
+let pressed=false;
+if(btn){await btn.asElement()?.click();await new Promise(r=>setTimeout(r,300));pressed=await p.evaluate(()=>{const b=[...document.querySelectorAll("button")].find(b=>/inject noise/i.test(b.textContent));return b?.getAttribute("aria-pressed")==="true"});}
+const katex=await p.$(".katex");
+const has3D=await p.evaluate(()=>performance.getEntriesByType("resource").some(r=>/WebGLRenderer|three/.test(r.name)));
+console.log("glucose deep-dive:");
+console.log("  monitor canvas:",!!monitorCanvas,"· entropy label:",hasEntropy,"· noise toggle pressed:",pressed);
+console.log("  katex rendered:",!!katex,"· loaded any 3D chunk:",has3D,"(want false)");
+console.log("  console errors:",errs.length?errs.slice(0,5):"none");
+await b.close();

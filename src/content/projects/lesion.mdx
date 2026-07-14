@@ -1,0 +1,48 @@
+import { Figure } from "@/components/ui/Figure";
+import { SplitDiagram } from "@/components/projects/diagrams";
+import { LeakageTimeline } from "@/components/projects/LeakageTimeline";
+
+## Problem
+
+Segmenting stroke lesions in CT is hard, but the harder problem this project actually confronted was **my own evaluation**. An early model looked excellent. It wasn't — and the story of finding out is the point.
+
+## Approach
+
+The work is a documented arc, v1 → v5, and the most important step is the one where the number got *worse*.
+
+<Figure id="1" caption="THE v1→v5 ARC — THE AUDIT IS THE STORY">
+  <LeakageTimeline />
+</Figure>
+
+### The leak
+
+The v1 split was slice-level: individual CT slices were shuffled and divided into train and validation. But adjacent slices from the *same patient* are nearly identical, so slices the model trained on had near-twins in the validation set. The reported 89% Dice was measuring memorization, not generalization.
+
+<Figure id="2" caption="SLICE-LEVEL vs PATIENT-LEVEL SPLITTING">
+  <SplitDiagram />
+</Figure>
+
+Re-splitting at the **patient level** — every slice from a patient lands entirely in train or entirely in validation — dropped held-out Dice to an honest **43–53%**. That drop is the project working correctly.
+
+### The champion
+
+The v3 model is **UNet++** trained with **Focal Tversky loss**, which lets you weight false positives and false negatives asymmetrically — useful when lesions are small and recall matters. The Tversky index and its focal form:
+
+$$
+\text{TI} = \frac{TP}{TP + \alpha\,FP + \beta\,FN}
+\qquad
+\mathcal{L}_{FT} = (1 - \text{TI})^{\gamma}
+$$
+
+v4 swept $\alpha, \beta, \gamma$ and patient-aware augmentation; v5 tried a Swin-UNet transformer hybrid that came out comparable rather than clearly better.
+
+## Results
+
+The champion reaches **51.7% held-out Dice** and **62.5% recall** on a genuinely held-out patient set. Every later experiment is reported against that same clean protocol.
+
+## Rigor notes / what I learned
+
+- Slice-level vs patient-level splitting is the difference between a flattering lie and a usable number.
+- The audit that halves your headline metric is the most valuable result in the project.
+
+> I'd rather report a real 51.7% than a fake 90%.

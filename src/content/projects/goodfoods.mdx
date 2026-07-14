@@ -1,0 +1,42 @@
+import { Figure } from "@/components/ui/Figure";
+import { OrchestrationDiagram } from "@/components/projects/diagrams";
+
+## Problem
+
+Most "AI booking assistants" chat convincingly and then quietly fail to actually book anything — or worse, cheerfully report a reservation that never happened. GoodFoodsAI is built around the opposite requirement: **complete the booking, and be provably unable to hallucinate one.**
+
+## Approach
+
+The core is a **hand-written orchestration loop** — no framework magic — that runs each user turn through intent detection, tool selection, execution, state update, and streamed response.
+
+<Figure id="1" caption="HAND-WRITTEN AGENT ORCHESTRATION LOOP">
+  <OrchestrationDiagram />
+</Figure>
+
+Tools are **deterministic and MCP-style**, exposed over a FastAPI endpoint: `search`, `availability`, `hold`, `create`, `modify`, `cancel`. Because state transitions run through real tools against a real store, the agent cannot *narrate* a reservation into existence — it either called `create` and got an id back, or it didn't.
+
+Retrieval is **SQLite + FAISS** (restaurant data and menu knowledge), responses **stream token-by-token** from a Groq-hosted `llama-3.1-8b`, and the front end is Next.js against the FastAPI backend.
+
+```text
+POST /agent/turn          → orchestration step (intent → tool → state → stream)
+GET  /tools/search        → restaurants by cuisine / area / party size
+GET  /tools/availability  → open slots for a restaurant + datetime
+POST /tools/hold          → soft-lock a slot
+POST /tools/create        → commit a reservation (returns id)
+POST /tools/modify        → change an existing reservation
+POST /tools/cancel        → release a reservation
+```
+
+### The reliability suite is the thesis
+
+The part I'm proudest of isn't the chat — it's the **automated reliability/regression suite** that asserts the agent's claimed actions match the actual database state after each scripted conversation. It's the artifact that turns "seems to work" into "doesn't hallucinate the reservation."
+
+## Results
+
+A working full-stack product — the repo carries screenshots and a demo. Language split is roughly **Python 56% / TypeScript 43%**. Concrete pass-rate numbers belong in the repo where they can be reproduced, not asserted here.
+
+## Rigor notes / what I learned
+
+- Determinism at the tool boundary is what makes an LLM agent trustworthy: the model proposes, the tools dispose, and the state is the source of truth.
+- Writing the orchestration loop by hand made every failure legible — you can see exactly which step chose the wrong tool.
+- A reliability suite is not optional for an agent that takes real actions; it's the difference between a demo and a product.

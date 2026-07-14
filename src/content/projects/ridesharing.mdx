@@ -1,0 +1,34 @@
+import { Figure } from "@/components/ui/Figure";
+import { MaddpgDiagram } from "@/components/projects/diagrams";
+
+## Problem
+
+Ride-sharing drivers optimizing purely for their own fare produce a system that is locally rational and globally poor — long detours, idle vehicles clustered in the wrong places, unnecessary emissions. This project asks the CS-meets-Economics question directly: **if agents carried an explicit incentive to help the network, could selfish learners converge on a fairer, more efficient equilibrium?**
+
+## Approach
+
+The fleet is trained with **MADDPG** — a centralized critic that sees the joint state and actions during training, and decentralized actors that act on local observations at deployment.
+
+<Figure id="1" caption="MADDPG — CENTRALIZED CRITIC, DECENTRALIZED ACTORS">
+  <MaddpgDiagram />
+</Figure>
+
+The mechanism-design piece is an **altruism score** capturing driver–rider reciprocity, folded into reward shaping:
+
+$$
+R = R_{\text{individual}} + \lambda \cdot R_{\text{altruism}}
+$$
+
+so each agent's return blends its own fare with a network-benefit term weighted by $\lambda$. Training happens under genuine **non-stationarity**: the driver and rider populations turn over stochastically, so the environment every agent faces keeps shifting as the others learn. The system is A/B-tested in simulation against greedy, profit-driven baselines.
+
+## Results
+
+Against the greedy baseline the altruistic fleet shows **higher utilization, fewer detours, lower CO₂, and more stable long-run equilibria**, with the largest gaps under volatile demand.
+
+These are **directional, simulation-based** results — the framing throughout is A/B comparison in a simulator, not a deployed system, and the gains are reported qualitatively because that is what the experiments support.
+
+## Rigor notes / what I learned
+
+- Reward shaping is mechanism design: the altruism term is a designed incentive, and the interesting result is that a small $\lambda$ changes the *equilibrium*, not just individual behavior.
+- Non-stationarity from population turnover is the hard part; a centralized critic is what makes the actors trainable through it.
+- The project is deliberately the bridge between the two halves of the degree — the RL is CS, the equilibrium and incentive analysis is economics.
