@@ -36,6 +36,7 @@ export function ParticleField({ count }: { count: number }) {
     g.setAttribute("aNet", new THREE.BufferAttribute(data.attrs.aNet, 3));
     g.setAttribute("aLatent", new THREE.BufferAttribute(data.attrs.aLatent, 3));
     g.setAttribute("aBrain", new THREE.BufferAttribute(data.attrs.aBrain, 3));
+    g.setAttribute("aBrainTone", new THREE.BufferAttribute(data.attrs.aBrainTone, 1));
     g.setAttribute("aClusterColor", new THREE.BufferAttribute(data.attrs.aClusterColor, 3));
     g.setAttribute("aNetLayer", new THREE.BufferAttribute(data.attrs.aNetLayer, 1));
     g.setAttribute("aSeed", new THREE.BufferAttribute(data.attrs.aSeed, 1));

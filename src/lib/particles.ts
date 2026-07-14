@@ -14,6 +14,8 @@ export interface ParticleData {
     aNet: Float32Array;
     aLatent: Float32Array;
     aBrain: Float32Array;
+    /** 0 = dim translucent cortex shell … 1 = bright internal structure. */
+    aBrainTone: Float32Array;
     aClusterColor: Float32Array;
     aNetLayer: Float32Array;
     aSeed: Float32Array;
@@ -63,6 +65,163 @@ function layerNodes(): { x: number; y: number; z: number; nx: number }[][] {
   });
 }
 
+/**
+ * Anatomical brain target, sagittal orientation (long axis on x, profile
+ * facing the camera; hemispheres split across z). Five layers, mirroring the
+ * classic "x-ray brain" look:
+ *   1. dim translucent cortex shell (folded, fissured)
+ *   2. bright branching vessel/dendrite trees filling the interior
+ *   3. corpus-callosum swirl arcing over the center
+ *   4. finely-striated cerebellum at the back-bottom
+ *   5. brainstem descending below
+ * `tone` per point: 0 = ghost shell … 1 = bright structure.
+ */
+function buildBrainTarget(count: number): { pos: Float32Array; tone: Float32Array } {
+  const pos = new Float32Array(count * 3);
+  const tone = new Float32Array(count);
+  let idx = 0;
+  const put = (x: number, y: number, z: number, t: number) => {
+    if (idx >= count) return;
+    pos[idx * 3] = x;
+    pos[idx * 3 + 1] = y;
+    pos[idx * 3 + 2] = z;
+    tone[idx] = t;
+    idx++;
+  };
+
+  const RX = 3.05; // anterior–posterior (profile length)
+  const RY = 2.1; // height
+  const RZ = 2.2; // lateral (depth toward camera)
+  const inside = (x: number, y: number, z: number) =>
+    (x * x) / (RX * RX) + ((y - 0.2) * (y - 0.2)) / (RY * RY) + (z * z) / (RZ * RZ) <= 0.94;
+
+  const nShell = Math.floor(count * 0.43);
+  const nTree = Math.floor(count * 0.33);
+  const nCall = Math.floor(count * 0.1);
+  const nCereb = Math.floor(count * 0.125);
+  // remainder (~1.5%) → brainstem: sparse on purpose, additive blending
+  // makes dense small volumes glow far brighter than intended
+
+  // 1 ── cortex shell (dim)
+  for (let i = 0; i < nShell; i++) {
+    const u = Math.random() * Math.PI * 2;
+    const v = Math.acos(2 * Math.random() - 1);
+    const shell = 0.9 + Math.random() * 0.1;
+    const dx = Math.sin(v) * Math.cos(u);
+    const dy = Math.cos(v);
+    const dz = Math.sin(v) * Math.sin(u);
+    const fold =
+      0.09 * Math.sin(dx * 8 + dy * 6) * Math.sin(dz * 7) +
+      0.05 * Math.sin(dx * 14 - dy * 9);
+    let x = dx * (RX + fold) * shell;
+    let y = dy * (RY + fold) * shell + 0.2;
+    let z = dz * (RZ + fold) * shell;
+    // interhemispheric fissure now runs along z
+    z += Math.sign(z) * Math.exp(-z * z * 14) * 0.2;
+    // flatten the base a little (temporal lobes)
+    if (y < -1.15) y = -1.15 + (y + 1.15) * 0.5;
+    // taper the back-bottom quadrant to make room for the cerebellum
+    if (x > 1.2 && y < -0.55) {
+      x = 1.2 + (x - 1.2) * 0.62;
+      y = -0.55 + (y + 0.55) * 0.62;
+    }
+    put(x, y, z, 0.16 + Math.random() * 0.12);
+  }
+
+  // 2 ── branching trees (bright): grown from central seeds outward
+  const treeBudget = nTree;
+  let treePlaced = 0;
+  while (treePlaced < treeBudget) {
+    // seed near the deep white matter, one per hemisphere at random
+    const x = rand(-1.3, 1.1);
+    const y = rand(-0.2, 0.7);
+    const z = (Math.random() < 0.5 ? -1 : 1) * rand(0.15, 0.5);
+    type Seg = { x: number; y: number; z: number; dx: number; dy: number; dz: number; depth: number; len: number };
+    const stack: Seg[] = [];
+    {
+      const d = new THREE.Vector3(gauss(), gauss() + 0.5, gauss() * 0.45).normalize();
+      stack.push({ x, y, z, dx: d.x, dy: d.y, dz: d.z, depth: 0, len: 0.8 });
+    }
+    while (stack.length && treePlaced < treeBudget) {
+      const s = stack.pop()!;
+      const steps = Math.max(3, Math.floor(s.len / 0.045));
+      let px = s.x, py = s.y, pz = s.z;
+      let alive = true;
+      for (let st = 0; st < steps; st++) {
+        px += s.dx * 0.045 + gauss() * 0.008;
+        py += s.dy * 0.045 + gauss() * 0.008;
+        pz += s.dz * 0.045 + gauss() * 0.008;
+        if (!inside(px, py, pz)) { alive = false; break; }
+        put(px + gauss() * 0.012, py + gauss() * 0.012, pz + gauss() * 0.012,
+            Math.max(0.55, 1.0 - s.depth * 0.09));
+        treePlaced++;
+        if (treePlaced >= treeBudget) break;
+      }
+      if (alive && s.depth < 5) {
+        const kids = Math.random() < 0.75 ? 2 : 1;
+        for (let c = 0; c < kids; c++) {
+          const dir = new THREE.Vector3(s.dx, s.dy, s.dz);
+          const axis = new THREE.Vector3(gauss(), gauss(), gauss()).normalize();
+          dir.applyAxisAngle(axis, rand(0.35, 0.8)).normalize();
+          stack.push({ x: px, y: py, z: pz, dx: dir.x, dy: dir.y, dz: dir.z, depth: s.depth + 1, len: s.len * 0.78 });
+        }
+      }
+    }
+  }
+
+  // 3 ── corpus-callosum swirl: nested arcs over the thalamus, curling at the end
+  for (let i = 0; i < nCall; i++) {
+    const arc = i % 3;
+    const t = Math.random();
+    const ang = Math.PI * 1.12 - t * Math.PI * 1.28; // ~202° → −29°
+    let rx = 1.55 - arc * 0.24;
+    let ry = 1.02 - arc * 0.16;
+    // splenium curl: spiral inward near the posterior end
+    if (t > 0.82) {
+      const c = (t - 0.82) / 0.18;
+      rx *= 1 - c * 0.55;
+      ry *= 1 - c * 0.55;
+    }
+    put(
+      0.12 + rx * Math.cos(ang) + gauss() * 0.03,
+      0.42 + ry * Math.sin(ang) + gauss() * 0.03,
+      gauss() * 0.12,
+      0.92,
+    );
+  }
+
+  // 4 ── cerebellum: bright, finely-banded folia
+  for (let i = 0; i < nCereb; i++) {
+    const u = Math.random() * Math.PI * 2;
+    const v = Math.acos(2 * Math.random() - 1);
+    const shell = 0.72 + Math.random() * 0.28;
+    const dx = Math.sin(v) * Math.cos(u);
+    const dy = Math.cos(v);
+    const dz = Math.sin(v) * Math.sin(u);
+    const band = 0.5 + 0.5 * Math.sin(Math.atan2(dy, dx) * 16);
+    const ripple = 0.05 * Math.sin(16 * Math.atan2(dy, dx));
+    put(
+      1.85 + dx * (1.08 + ripple) * shell,
+      -1.2 + dy * (0.82 + ripple) * shell,
+      dz * 0.98 * shell,
+      0.5 + band * 0.45,
+    );
+  }
+
+  // 5 ── brainstem: slim, dimmer stalk descending from the midbrain —
+  // a supporting detail, not a spotlight (v1 read as a bright funnel).
+  while (idx < count) {
+    const t = Math.random();
+    const bx = 0.55 - 0.2 * t + 0.4 * t * t;
+    const by = -0.85 - t * 1.3;
+    const r = (1 - t * 0.5) * 0.15;
+    const a = Math.random() * Math.PI * 2;
+    put(bx + Math.cos(a) * r, by, Math.sin(a) * r * 0.8 + gauss() * 0.02, 0.45);
+  }
+
+  return { pos, tone };
+}
+
 /** Double-helix geometry: two backbone strands + discrete ladder rungs. */
 const HELIX_SPAN = 22;
 const HELIX_TURNS = 5.5;
@@ -83,6 +242,7 @@ export function buildParticleData(
   const aNet = new Float32Array(count * 3);
   const aLatent = new Float32Array(count * 3);
   const aBrain = new Float32Array(count * 3);
+  const aBrainTone = new Float32Array(count);
   const aClusterColor = new Float32Array(count * 3);
   const aNetLayer = new Float32Array(count);
   const aSeed = new Float32Array(count);
@@ -180,45 +340,13 @@ export function buildParticleData(
       aClusterColor[i3 + 2] = col.b;
     }
 
-    // ── Brain point cloud: oval cortex (fissure + folding) + a ────
-    // smaller, tighter-folded cerebellum lobe tucked behind/below it.
-    {
-      const isCerebellum = Math.random() < 0.07;
-      if (isCerebellum) {
-        const u = Math.random() * Math.PI * 2;
-        const v = Math.acos(2 * Math.random() - 1);
-        const shell = 0.85 + Math.random() * 0.15;
-        const x = Math.sin(v) * Math.cos(u);
-        const y = Math.cos(v);
-        const z = Math.sin(v) * Math.sin(u);
-        const fold = 0.22 * Math.sin(x * 14 + y * 11) * Math.sin(z * 13);
-        aBrain[i3] = x * (1.35 + fold) * shell;
-        aBrain[i3 + 1] = y * (0.85 + fold) * shell - 1.55;
-        aBrain[i3 + 2] = z * (1.15 + fold) * shell - 2.05;
-      } else {
-        const u = Math.random() * Math.PI * 2;
-        const v = Math.acos(2 * Math.random() - 1);
-        const shell = 0.86 + Math.random() * 0.14;
-        const x = Math.sin(v) * Math.cos(u);
-        const y = Math.cos(v);
-        const z = Math.sin(v) * Math.sin(u);
-        // multi-octave cortical folding
-        const fold =
-          0.1 * Math.sin(x * 9 + y * 7) * Math.sin(z * 8) +
-          0.06 * Math.sin(x * 15 - z * 10);
-        const sx = 2.65 + fold;
-        const sy = 2.05 + fold;
-        const sz = 3.05 + fold;
-        // longitudinal fissure splits the hemispheres
-        const fissure = Math.sign(x) * Math.exp(-x * x * 14) * 0.24;
-        // taper the occipital (back) end to leave room for the cerebellum
-        const backTaper = z < -0.4 ? 1 - (Math.abs(z) - 0.4) * 0.35 : 1;
-        aBrain[i3] = x * sx * shell * backTaper + fissure;
-        aBrain[i3 + 1] = y * sy * shell * backTaper + 0.25;
-        aBrain[i3 + 2] = z * sz * shell * backTaper;
-      }
-    }
   }
+
+  // Brain target is built as coherent layered structures (shell, trees,
+  // callosum, cerebellum, brainstem) rather than per-particle sampling.
+  const brain = buildBrainTarget(count);
+  aBrain.set(brain.pos);
+  aBrainTone.set(brain.tone);
 
   return {
     count,
@@ -229,6 +357,7 @@ export function buildParticleData(
       aNet,
       aLatent,
       aBrain,
+      aBrainTone,
       aClusterColor,
       aNetLayer,
       aSeed,

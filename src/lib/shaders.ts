@@ -24,6 +24,7 @@ export const morphVert = /* glsl */ `
   attribute vec3 aNet;
   attribute vec3 aLatent;
   attribute vec3 aBrain;
+  attribute float aBrainTone;
   attribute vec3 aClusterColor;
   attribute float aNetLayer;
   attribute float aSeed;
@@ -31,6 +32,7 @@ export const morphVert = /* glsl */ `
   varying vec3  vColor;
   varying float vGlow;
   varying float vFade;
+  varying float vAlpha;
 
   // hash / value-noise based pseudo curl offset (cheap, GPU-friendly)
   vec3 hash3(vec3 p){
@@ -46,13 +48,16 @@ export const morphVert = /* glsl */ `
     vec3 col;
     vec3 cWave = vec3(0.42, 0.78, 1.0);   // signal blue
     vec3 cNet  = vec3(0.29, 0.95, 0.63);  // phosphor
-    vec3 cBrn  = vec3(0.35, 0.85, 0.78);  // teal
+    // x-ray brain: ghost-blue shell → near-white bright structures
+    vec3 cBrnDim    = vec3(0.30, 0.55, 0.82);
+    vec3 cBrnBright = vec3(0.88, 0.96, 1.0);
     // Helix backbone strands lean toward the states either side of them —
     // strand A toward signal-blue, strand B toward phosphor — so the color
     // story reads as a continuous thread, not a hard cut.
     vec3 cHelix = mix(cWave, cNet, aHelixTone);
 
     float g = 0.0; // extra glow
+    vAlpha = 1.0;
 
     if (uProgress < 1.0){
       float k = uProgress;
@@ -69,7 +74,12 @@ export const morphVert = /* glsl */ `
     } else {
       float k = clamp(uProgress - 3.0, 0.0, 1.0);
       pos = mix(aLatent, aBrain, k);
-      col = mix(aClusterColor, cBrn, k);
+      vec3 cBrain = mix(cBrnDim, cBrnBright, aBrainTone);
+      col = mix(aClusterColor, cBrain, k);
+      // bright structures (trees/callosum/cerebellum) glow; the cortex
+      // shell recedes to a translucent ghost
+      g += aBrainTone * 0.5 * k;
+      vAlpha = mix(1.0, 0.22 + 0.78 * aBrainTone, k);
     }
 
     // Turbulence is gated by morph VELOCITY (uSwarm from the CPU), so points
@@ -103,7 +113,11 @@ export const morphVert = /* glsl */ `
 
     gl_Position = projectionMatrix * mv;
     float sizeJitter = 0.7 + 0.6 * fract(aSeed * 1.37);
-    gl_PointSize = uSize * uSizeScale * uPixelRatio * sizeJitter * (1.0 / -mv.z);
+    // In the brain state, bright filaments render small and crisp while the
+    // ghost shell stays soft and slightly larger.
+    float brainK = clamp(uProgress - 3.0, 0.0, 1.0);
+    float brainSize = mix(1.0, mix(1.1, 0.62, aBrainTone), brainK);
+    gl_PointSize = uSize * uSizeScale * uPixelRatio * sizeJitter * brainSize * (1.0 / -mv.z);
   }
 `;
 
@@ -112,6 +126,7 @@ export const morphFrag = /* glsl */ `
   varying vec3  vColor;
   varying float vGlow;
   varying float vFade;
+  varying float vAlpha;
 
   void main(){
     // soft round sprite
@@ -125,6 +140,6 @@ export const morphFrag = /* glsl */ `
     float core = smoothstep(0.28, 0.0, d);
     c += core * 0.35;
 
-    gl_FragColor = vec4(c, alpha * vFade);
+    gl_FragColor = vec4(c, alpha * vFade * vAlpha);
   }
 `;

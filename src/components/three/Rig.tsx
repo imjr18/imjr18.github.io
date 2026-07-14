@@ -71,13 +71,13 @@ export function Rig() {
       pos.set(cx * 0.55, cy * 0.5 + 0.4, 8.2);
       lk.set(cx, cy, cz);
     } else {
-      // Brain: close enough to be the clear star of this act, biased so it
-      // sits beside the About copy rather than dead-center behind it; the
-      // text scrim (not distance) is what keeps the paragraph legible.
+      // Brain: sagittal profile faces the camera; gentle orbit for parallax
+      // through the internal branching. Framed right-of-center beside the
+      // About copy — the text scrim keeps the paragraph legible.
       const k = THREE.MathUtils.clamp((p - CARD_SPAN[1]) / (1 - CARD_SPAN[1]), 0, 1);
       const ang = state.clock.elapsedTime * 0.12;
-      pos.set(Math.sin(ang) * (1.6 + k * 1.6), 0.85, 6.6 + k * 0.8);
-      lk.set(-1.6, 0.35, 0);
+      pos.set(Math.sin(ang) * (1.4 + k * 1.4), 0.5, 7.6 + k * 0.9);
+      lk.set(-1.7, -0.05, 0);
     }
 
     const lambda = 3.2;
